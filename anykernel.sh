@@ -74,79 +74,10 @@ if [ -d /data/adb/magisk ] || [ -f /sbin/.magisk ]; then
     esac
 fi
 
-# =======================================================
-# 📌 KPM (Kernel Patch Manager) 修补功能
-# =======================================================
-
+# 检查内核镜像是否存在
 if [ ! -f "$AKHOME/Image" ]; then
     ui_print " ❌ 错误：内核镜像文件 Image 未找到"
     abort "❌安装失败：没有内核镜像文件"
-fi
-
-if [ -f "$AKHOME/tools/patch_android" ]; then
-    KPTOOL="$AKHOME/tools/patch_android"
-    KERNEL_IMAGE="$AKHOME/Image"
-    ui_print " "
-    ui_print " 🛠是否进行 KPM 修补？"
-    ui_print " ◾️音量上：跳过 (NO)"
-    ui_print " ◾️音量下：进行 (YES)"
-    ui_print " "
-    key_click=""
-    while [ "$key_click" = "" ]; do
-        key_click=$(getevent -qlc 1 | awk '{ print $3 }' | grep 'KEY_VOLUME')
-        sleep 0.2
-    done
-
-    case "$key_click" in
-        "KEY_VOLUMEDOWN")
-            ui_print "  🛠进行 KPM 修补操作..."
-            ORIG_SIZE=$(stat -c%s "$KERNEL_IMAGE" 2>/dev/null || stat -f%z "$KERNEL_IMAGE")
-            ORIG_MD5=$(md5sum "$KERNEL_IMAGE" | cut -d' ' -f1)
-            ui_print "   ◾️修补前大小: $((ORIG_SIZE / 1024 / 1024))MB"
-            ui_print "   ◾️修补前MD5: ${ORIG_MD5:0:16}"
-            
-            cp "$KPTOOL" "$AKHOME/patch_android"
-            chmod 777 "$AKHOME/patch_android"
-            
-            ui_print "   ◾️正在修补中..."
-            cd "$AKHOME"
-            ./patch_android
-            PATCH_RESULT=$?
-            # 在 AnyKernel 环境中，我们保持当前目录为 AKHOME
-            # cd - > /dev/null
-            
-            if [ -f "$AKHOME/oImage" ]; then
-                OIMAGE_SIZE=$(stat -c%s "$AKHOME/oImage" 2>/dev/null || stat -f%z "$AKHOME/oImage")
-                
-                rm -f "$AKHOME/Image"
-                mv "$AKHOME/oImage" "$AKHOME/Image"
-                
-                NEW_SIZE=$(stat -c%s "$KERNEL_IMAGE" 2>/dev/null || stat -f%z "$KERNEL_IMAGE")
-                NEW_MD5=$(md5sum "$KERNEL_IMAGE" | cut -d' ' -f1)
-                
-                ui_print "   ◾️修补后大小: $((NEW_SIZE / 1024 / 1024))MB"
-                ui_print "   ◾️修补后MD5: ${NEW_MD5:0:16}"
-                
-                if [ "$ORIG_MD5" = "$NEW_MD5" ]; then
-                    ui_print " ⚠️ KPM 修补完成，但内核未发生变化"
-                else
-                    ui_print " ✅ KPM 修补成功！"
-                fi
-            else
-                ui_print " ❌ KPM 修补失败"
-            fi
-            
-            rm -f "$AKHOME/patch_android"
-            ;;
-        "KEY_VOLUMEUP")
-            ui_print " ❕已跳过 KPM 修补"
-            ;;
-        *)
-            ui_print " ❕未知按键输入，已跳过 KPM 修补"
-            ;;
-    esac
-else
-    ui_print " ❕未找到 KPM 修补工具，跳过 KPM 修补"
 fi
 
 ui_print " "
@@ -239,14 +170,13 @@ if [ -f "$AKHOME/ksu_module_susfs_1.5.2+_Release.zip" ] || [ -f "$AKHOME/ksu_mod
             ;;
     esac
 else
-    ui_print "  -> No SUSFS Module found, Installing SUSFS Module from NONE, Skipping Installation"
+    ui_print "  -> No SUSFS Module found, Skipping Installation"
 fi
 
 # =======================================================
 # 📌 SukiSU Ultra APK 安装
 # =======================================================
 
-# 交互式安装 SukiSU Ultra APK 作为用户应用
 ui_print " "
 ui_print "安装 SukiSU Ultra APK 作为用户应用？"
 ui_print "Install SukiSU Ultra APK as user app?"
